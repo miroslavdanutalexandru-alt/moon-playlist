@@ -27,6 +27,8 @@ jobs:
         env:
           YOUTUBE_PLAYLIST_ID: PLApqyIlpej2o
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          NTFY_SERVER: https://ntfy.sh
+          NTFY_TOPIC: moon-playlist-7bb3596cd0321a2a662ceceb
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_TO_NUMBER: ${{ secrets.WHATSAPP_TO_NUMBER }}

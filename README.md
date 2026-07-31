@@ -1,12 +1,12 @@
 # A Song for Every Facet of My Moon
 
-A static GitHub Pages site that links to a YouTube playlist and includes a WhatsApp opt-in link. The repository also contains a scheduled GitHub Actions workflow that checks the playlist feed and sends a WhatsApp message when a new song appears.
+A static GitHub Pages site that links to a YouTube playlist and includes ntfy and WhatsApp opt-in links. The repository also contains a scheduled GitHub Actions workflow that checks the playlist feed and sends a notification when a new song appears.
 
 ## Files
 
 - `index.html`, `styles.css`, `script.js`: the GitHub Pages site.
-- `config.js`: public website configuration for the WhatsApp opt-in link.
-- `scripts/notify-playlist.mjs`: scheduled playlist checker and WhatsApp sender.
+- `config.js`: public website configuration for the ntfy topic.
+- `scripts/notify-playlist.mjs`: scheduled playlist checker and notification sender.
 - `.github/workflows/playlist-notifier.yml`: runs the checker twice per hour.
 - `data/playlist-state.json`: committed playlist state used to detect new videos.
 
@@ -24,7 +24,19 @@ The playlist button points to:
 https://www.youtube.com/watch?v=jSelxexU9Lg&list=PLApqyIlpej2o
 ```
 
-## WhatsApp notification setup
+## ntfy notifications
+
+The site has a button that opens the ntfy subscription page for this topic:
+
+```text
+moon-playlist-7bb3596cd0321a2a662ceceb
+```
+
+On Android, iPhone, or desktop, install/open ntfy and subscribe to that topic. GitHub Actions publishes new-song notifications there automatically.
+
+ntfy topics are public if they are not reserved or protected. This topic is intentionally hard to guess, but anyone who knows it can subscribe or publish to it. For private notifications, reserve/protect the topic in ntfy or self-host ntfy with authentication.
+
+## Optional WhatsApp notification setup
 
 GitHub Pages cannot send WhatsApp messages by itself. True automatic WhatsApp notifications require WhatsApp Business Platform credentials.
 

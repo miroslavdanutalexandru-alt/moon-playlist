@@ -121,6 +121,32 @@ function buildMessage(video) {
   ].join("\n");
 }
 
+async function sendNtfy(video) {
+  const topic = process.env.NTFY_TOPIC;
+  if (!topic) {
+    return false;
+  }
+
+  const server = (process.env.NTFY_SERVER || "https://ntfy.sh").replace(/\/$/, "");
+  const response = await fetch(`${server}/${encodeURIComponent(topic)}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Title": "New moon playlist song",
+      "X-Tags": "musical_note,sparkles",
+      "X-Click": video.link,
+    },
+    body: `${video.title}\n${video.link}`,
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`ntfy returned ${response.status}: ${body}`);
+  }
+
+  return true;
+}
+
 function buildWhatsAppPayload(video) {
   const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
 
@@ -162,8 +188,12 @@ function buildWhatsAppPayload(video) {
 
 async function sendWhatsApp(video) {
   const missing = requiredForSend.filter((name) => !process.env[name]);
+  if (missing.length === requiredForSend.length) {
+    return false;
+  }
+
   if (missing.length > 0) {
-    throw new Error(`Missing required WhatsApp env vars: ${missing.join(", ")}`);
+    throw new Error(`Partial WhatsApp setup. Missing env vars: ${missing.join(", ")}`);
   }
 
   const apiVersion = process.env.WHATSAPP_API_VERSION || "v23.0";
@@ -181,6 +211,8 @@ async function sendWhatsApp(video) {
     const body = await response.text();
     throw new Error(`WhatsApp API returned ${response.status}: ${body}`);
   }
+
+  return true;
 }
 
 let videos;
@@ -213,10 +245,16 @@ if (newVideos.length === 0) {
 
 for (const video of newVideos) {
   if (dryRun) {
-    console.log(`[dry run] Would send WhatsApp notification for: ${video.title}`);
+    console.log(`[dry run] Would send notification for: ${video.title}`);
   } else {
-    await sendWhatsApp(video);
-    console.log(`Sent WhatsApp notification for: ${video.title}`);
+    const sentNtfy = await sendNtfy(video);
+    const sentWhatsApp = await sendWhatsApp(video);
+
+    if (!sentNtfy && !sentWhatsApp) {
+      throw new Error("No notification channel configured. Set NTFY_TOPIC or WhatsApp env vars.");
+    }
+
+    console.log(`Sent notification for: ${video.title}`);
   }
 }
 
