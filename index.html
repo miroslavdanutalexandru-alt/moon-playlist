@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A Song for Every Facet of My Moon — a living YouTube playlist, made with love."
+    />
+    <meta name="theme-color" content="#100b20" />
+    <title>A Song for Every Facet of My Moon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Italiana&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="sky" aria-hidden="true">
+      <span class="star star-one"></span>
+      <span class="star star-two"></span>
+      <span class="star star-three"></span>
+      <span class="star star-four"></span>
+      <span class="star star-five"></span>
+    </div>
+
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div class="eyebrow"><span></span> A living love letter <span></span></div>
+
+        <div class="orbit" aria-hidden="true">
+          <div class="moon"></div>
+          <div class="sun"><i></i></div>
+          <div class="orbit-line"></div>
+        </div>
+
+        <p class="dedication">For every phase, every light, every version of you</p>
+        <h1 id="page-title">A Song for Every<br /><em>Facet of My Moon</em></h1>
+        <p class="intro">
+          This playlist will keep growing—one song, one memory, and one little
+          reminder at a time.
+        </p>
+
+        <div class="actions">
+          <a
+            class="button button-primary"
+            href="https://www.youtube.com/watch?v=jSelxexU9Lg&amp;list=PLApqyIlpej2o"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="play-icon" aria-hidden="true">▶</span>
+            Listen to the playlist
+          </a>
+          <a class="button button-secondary" id="whatsapp-link" href="#updates">
+            <span class="whatsapp-icon" aria-hidden="true">✦</span>
+            Notify me on WhatsApp
+          </a>
+        </div>
+
+        <p class="microcopy">No forms. No spam. Just a message when a new song arrives.</p>
+      </section>
+
+      <section class="updates" id="updates" aria-labelledby="updates-title">
+        <p class="section-number">01 / STAY IN THE ORBIT</p>
+        <div class="updates-copy">
+          <h2 id="updates-title">Never miss the<br /><em>next song.</em></h2>
+          <p>
+            Tap the button to open WhatsApp and send the pre-filled opt-in message.
+            Once it is sent, you can receive a note whenever this playlist grows.
+          </p>
+          <ol class="steps">
+            <li><span>1</span><div><strong>Open WhatsApp</strong><small>We prepare the message for you.</small></div></li>
+            <li><span>2</span><div><strong>Tap send</strong><small>This confirms you want playlist updates.</small></div></li>
+            <li><span>3</span><div><strong>Hear what’s new</strong><small>A song link lands right in the chat.</small></div></li>
+          </ol>
+          <a class="text-link" id="whatsapp-link-secondary" href="#updates">
+            Open the WhatsApp message <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Made under the same sky</span>
+      <span class="footer-mark">☾ &nbsp;·&nbsp; ☼</span>
+      <span id="year"></span>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
