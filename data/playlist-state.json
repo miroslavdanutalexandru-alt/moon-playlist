@@ -1,5 +1,14 @@
 {
-  "initialized": false,
-  "videoIds": [],
-  "lastCheckedAt": null
+  "initialized": true,
+  "videoIds": [
+    "jSelxexU9Lg",
+    "N_63fRgbszE",
+    "CpjFHr4L-sQ",
+    "TiQqA9z59E8",
+    "PFG8VCQ9pG0",
+    "WiP3Y8HxreM",
+    "nNJkh92SwUk",
+    "VlMEGBsw6j8"
+  ],
+  "lastCheckedAt": "2026-07-31T12:30:24.379Z"
 }
