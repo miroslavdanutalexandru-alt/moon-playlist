@@ -1,4 +1,4 @@
-name: Playlist WhatsApp notifier
+name: Playlist ntfy notifier
 
 on:
   workflow_dispatch:
