@@ -9,9 +9,6 @@
     ? `${ntfyServer}/${encodeURIComponent(ntfyTopic)}`
     : "https://ntfy.sh/app";
 
-  const topicLabel = document.getElementById("ntfy-topic");
-  if (topicLabel) topicLabel.textContent = ntfyTopic || "not configured";
-
   for (const id of ["whatsapp-link", "whatsapp-link-secondary"]) {
     const link = document.getElementById(id);
     if (!link) continue;
