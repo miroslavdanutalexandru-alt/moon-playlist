@@ -164,11 +164,18 @@ async function sendNtfy(video) {
 }
 
 let videos;
-try {
+if (process.env.YOUTUBE_API_KEY) {
+  try {
+    videos = await fetchFromDataApi();
+    console.log(`Read ${videos.length} videos from the YouTube Data API.`);
+  } catch (error) {
+    console.log(`${error.message}. Trying the YouTube RSS feed fallback.`);
+  }
+}
+
+if (!videos) {
   videos = await fetchFromFeed();
-} catch (error) {
-  console.log(`${error.message}. Trying YouTube Data API fallback.`);
-  videos = await fetchFromDataApi();
+  console.log(`Read ${videos.length} videos from the YouTube RSS feed.`);
 }
 
 if (videos.length === 0) {
