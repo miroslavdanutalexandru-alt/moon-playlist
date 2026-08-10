@@ -71,7 +71,9 @@ function parseFeed(xml) {
 async function fetchFromFeed() {
   const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
   const response = await fetchWithRetry(feedUrl, {}, "YouTube feed");
-  return parseFeed(await response.text());
+  const videos = parseFeed(await response.text());
+  if (videos.length === 0) throw new Error("YouTube feed returned no videos");
+  return videos;
 }
 
 async function fetchFromDataApi() {
