@@ -1,14 +1,46 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 
 const playlistId = process.env.YOUTUBE_PLAYLIST_ID || "PLApqyIlpej2o";
 const statePath = process.env.PLAYLIST_STATE_PATH || "data/playlist-state.json";
 const dryRun = process.env.DRY_RUN === "1";
+const requestTimeoutMs = 15_000;
+const maxAttempts = 4;
 
-const requiredForSend = [
-  "WHATSAPP_ACCESS_TOKEN",
-  "WHATSAPP_PHONE_NUMBER_ID",
-  "WHATSAPP_TO_NUMBER",
-];
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchWithRetry(url, options = {}, label = "request") {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (response.ok) return response;
+
+      const body = await response.text();
+      const retryable = response.status === 408 || response.status === 425 ||
+        response.status === 429 || response.status >= 500;
+      lastError = new Error(`${label} returned ${response.status}: ${body.slice(0, 300)}`);
+      lastError.retryable = retryable;
+      if (!retryable || attempt === maxAttempts) throw lastError;
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error.retryable === false) throw error;
+      lastError = error.name === "AbortError"
+        ? new Error(`${label} timed out after ${requestTimeoutMs}ms`)
+        : error;
+      if (attempt === maxAttempts) throw lastError;
+    }
+
+    await sleep(500 * 2 ** (attempt - 1));
+  }
+
+  throw lastError;
+}
 
 function decodeXml(value) {
   return value
@@ -38,12 +70,7 @@ function parseFeed(xml) {
 
 async function fetchFromFeed() {
   const feedUrl = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-  const response = await fetch(feedUrl);
-
-  if (!response.ok) {
-    throw new Error(`YouTube feed returned ${response.status}`);
-  }
-
+  const response = await fetchWithRetry(feedUrl, {}, "YouTube feed");
   return parseFeed(await response.text());
 }
 
@@ -68,12 +95,11 @@ async function fetchFromDataApi() {
       params.set("pageToken", pageToken);
     }
 
-    const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${params}`);
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`YouTube Data API returned ${response.status}: ${body}`);
-    }
-
+    const response = await fetchWithRetry(
+      `https://www.googleapis.com/youtube/v3/playlistItems?${params}`,
+      {},
+      "YouTube Data API",
+    );
     const payload = await response.json();
     for (const item of payload.items || []) {
       const snippet = item.snippet || {};
@@ -109,16 +135,9 @@ async function saveState(videoIds) {
     lastCheckedAt: new Date().toISOString(),
   };
 
-  await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`);
-}
-
-function buildMessage(video) {
-  return [
-    "A new song was added to A Song for Every Facet of My Moon.",
-    "",
-    video.title,
-    video.link,
-  ].join("\n");
+  const tempPath = `${statePath}.tmp`;
+  await writeFile(tempPath, `${JSON.stringify(state, null, 2)}\n`);
+  await rename(tempPath, statePath);
 }
 
 async function sendNtfy(video) {
@@ -128,7 +147,7 @@ async function sendNtfy(video) {
   }
 
   const server = (process.env.NTFY_SERVER || "https://ntfy.sh").replace(/\/$/, "");
-  const response = await fetch(`${server}/${encodeURIComponent(topic)}`, {
+  const response = await fetchWithRetry(`${server}/${encodeURIComponent(topic)}`, {
     method: "POST",
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
@@ -138,79 +157,6 @@ async function sendNtfy(video) {
     },
     body: `${video.title}\n${video.link}`,
   });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`ntfy returned ${response.status}: ${body}`);
-  }
-
-  return true;
-}
-
-function buildWhatsAppPayload(video) {
-  const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
-
-  if (!templateName) {
-    return {
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to: process.env.WHATSAPP_TO_NUMBER,
-      type: "text",
-      text: {
-        preview_url: true,
-        body: buildMessage(video),
-      },
-    };
-  }
-
-  return {
-    messaging_product: "whatsapp",
-    recipient_type: "individual",
-    to: process.env.WHATSAPP_TO_NUMBER,
-    type: "template",
-    template: {
-      name: templateName,
-      language: {
-        code: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en_US",
-      },
-      components: [
-        {
-          type: "body",
-          parameters: [
-            { type: "text", text: video.title },
-            { type: "text", text: video.link },
-          ],
-        },
-      ],
-    },
-  };
-}
-
-async function sendWhatsApp(video) {
-  const missing = requiredForSend.filter((name) => !process.env[name]);
-  if (missing.length === requiredForSend.length) {
-    return false;
-  }
-
-  if (missing.length > 0) {
-    throw new Error(`Partial WhatsApp setup. Missing env vars: ${missing.join(", ")}`);
-  }
-
-  const apiVersion = process.env.WHATSAPP_API_VERSION || "v23.0";
-  const endpoint = `https://graph.facebook.com/${apiVersion}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(buildWhatsAppPayload(video)),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`WhatsApp API returned ${response.status}: ${body}`);
-  }
 
   return true;
 }
@@ -233,29 +179,27 @@ const newVideos = videos.filter((video) => !knownIds.has(video.videoId)).reverse
 
 if (!state.initialized) {
   console.log(`Initialized playlist state with ${videos.length} videos. No messages sent.`);
-  await saveState(videos.map((video) => video.videoId));
+  if (!dryRun) await saveState(videos.map((video) => video.videoId));
   process.exit(0);
 }
 
 if (newVideos.length === 0) {
   console.log("No new playlist videos found.");
-  await saveState(videos.map((video) => video.videoId));
+  if (!dryRun) await saveState(videos.map((video) => video.videoId));
   process.exit(0);
 }
 
+const processedIds = new Set(knownIds);
 for (const video of newVideos) {
   if (dryRun) {
     console.log(`[dry run] Would send notification for: ${video.title}`);
   } else {
-    const sentNtfy = await sendNtfy(video);
-    const sentWhatsApp = await sendWhatsApp(video);
-
-    if (!sentNtfy && !sentWhatsApp) {
-      throw new Error("No notification channel configured. Set NTFY_TOPIC or WhatsApp env vars.");
-    }
-
+    if (!process.env.NTFY_TOPIC) throw new Error("NTFY_TOPIC is not configured.");
+    await sendNtfy(video);
+    processedIds.add(video.videoId);
+    await saveState([...processedIds]);
     console.log(`Sent notification for: ${video.title}`);
   }
 }
 
-await saveState(videos.map((video) => video.videoId));
+if (!dryRun) await saveState(videos.map((video) => video.videoId));

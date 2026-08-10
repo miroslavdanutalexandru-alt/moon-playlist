@@ -160,7 +160,7 @@ h1 em, h2 em { color: var(--gold-light); font-style: italic; }
 .button-secondary { border-color: var(--line); background: rgba(255,255,255,.025); }
 .button-secondary:hover { border-color: rgba(244, 211, 140, .55); background: rgba(244, 211, 140, .06); }
 .play-icon { font-size: .72rem; }
-.whatsapp-icon { color: var(--gold-light); }
+.notification-icon { color: var(--gold-light); }
 .microcopy { color: #776f82; font-size: .72rem; margin-top: 18px; }
 
 .updates {
